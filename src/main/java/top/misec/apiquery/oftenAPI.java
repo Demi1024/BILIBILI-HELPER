@@ -1,15 +1,10 @@
 package top.misec.apiquery;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
 import top.misec.login.Verify;
 import top.misec.utils.HttpUtil;
-
-import java.util.ArrayList;
-import java.util.Random;
 
 /**
  * 部分API简单封装。
@@ -62,39 +57,24 @@ public class oftenAPI {
     }
 
     /**
-     * 请求关注列表更新的视频，随机返回一个bvid
+     * 请求视频title，未获取到时返回bvid
      *
-     * @return bvid
+     * @return title
      */
-    public static String queryDynamicNew() {
+    public static String videoTitle(String bvid) {
+        String title = bvid;
+        String urlParameter = "?bvid=" + bvid;
+        JsonObject jsonObject = HttpUtil.doGet(ApiList.videoView + urlParameter);
 
-        ArrayList<String> arrayList = new ArrayList();
-        String urlParameter = "?uid=" + Verify.getInstance().getUserId()
-                + "&type_list=8"
-                + "&from="
-                + "&platform=web";
-        JsonObject jsonObject = HttpUtil.doGet(ApiList.queryDynamicNew + urlParameter);
-        JsonArray jsonArray = jsonObject.getAsJsonObject("data").getAsJsonArray("cards");
-
-        if (jsonArray != null) {
-            for (JsonElement videoInfo : jsonArray) {
-                JsonObject tempObject = videoInfo.getAsJsonObject().getAsJsonObject("desc");
-                arrayList.add(tempObject.get("bvid").getAsString());
-            }
+        if (jsonObject.get("code").getAsInt() == 0) {
+            title = jsonObject.getAsJsonObject("data").getAsJsonObject("owner").get("name").getAsString() + ": ";
+            title += jsonObject.getAsJsonObject("data").get("title").getAsString();
+        } else {
+            logger.info("未能获取标题");
+            logger.debug(jsonObject.get("message").getAsString());
         }
 
-        Random random = new Random();
-        return arrayList.get(random.nextInt(arrayList.size()));
-    }
-
-    public static String videoTitle(String aid) {
-        String title = null;
-        String author = null;
-        String urlParameter = "?aid=" + aid;
-        JsonObject jsonObject = HttpUtil.doGet(ApiList.videoView + urlParameter);
-        author = jsonObject.getAsJsonObject("data").getAsJsonObject("owner").get("name").getAsString();
-        title = jsonObject.getAsJsonObject("data").get("title").getAsString();
-        return author + " : " + title;
+        return title;
     }
 
 }
